@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
 
@@ -9,12 +9,18 @@ export default function Home() {
   const [vehicleCount, setVehicleCount] = useState<number | null>(null)
   const [message, setMessage] = useState('Memeriksa login...')
 
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [loginError, setLoginError] = useState('')
+
   async function loadDashboard() {
     const { data: userData, error: userError } =
       await supabase.auth.getUser()
 
     if (userError || !userData.user) {
       setUserEmail(null)
+      setVehicleCount(null)
       setMessage('Belum login.')
       return
     }
@@ -36,30 +42,122 @@ export default function Home() {
 
   useEffect(() => {
     loadDashboard()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserEmail(session.user.email ?? null)
+        loadDashboard()
+      } else {
+        setUserEmail(null)
+        setVehicleCount(null)
+        setMessage('Belum login.')
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    setLoginLoading(true)
+    setLoginError('')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setLoginError('Email atau password salah.')
+      setLoginLoading(false)
+      return
+    }
+
+    setPassword('')
+    setLoginLoading(false)
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut()
     setUserEmail(null)
     setVehicleCount(null)
-    setMessage('Berhasil logout.')
+    setMessage('Belum login.')
   }
 
   if (!userEmail) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-xl bg-white p-8 shadow-sm">
-          <h1 className="text-xl font-bold text-gray-900">
-            Pemeliharaan Kendaraan
-          </h1>
+      <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Pemeliharaan Kendaraan
+            </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Silakan login terlebih dahulu.
-          </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Silakan login untuk melanjutkan.
+            </p>
+          </div>
 
-          <p className="mt-4 text-sm text-gray-600">
-            {message}
-          </p>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Gmail
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="nama@gmail.com"
+                autoComplete="email"
+                required
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Masukkan password"
+                autoComplete="current-password"
+                required
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+
+            {loginError && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loginLoading ? 'Memproses...' : 'Login'}
+            </button>
+          </form>
         </div>
       </main>
     )
