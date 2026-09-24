@@ -1,4 +1,5 @@
 'use client'
+
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -39,88 +40,160 @@ const menuItems = [
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState<string | null>('Transaksi')
+  const [mobileOpen, setMobileOpen] = useState(false)
   const router = useRouter()
 
+  function handleMenuClick(label: string, hasChildren: boolean) {
+    if (hasChildren) {
+      setOpenMenu(openMenu === label ? null : label)
+      return
+    }
+
+    if (label === 'Dashboard') {
+      router.push('/')
+      setMobileOpen(false)
+      return
+    }
+
+    setOpenMenu(null)
+  }
+
+  function handleChildClick(child: string) {
+    if (child === 'Kendaraan') {
+      router.push('/kendaraan')
+      setMobileOpen(false)
+    }
+  }
+
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
-      {/* Header */}
-      <div className="border-b border-gray-200 px-5 py-5">
-        <h1 className="text-lg font-bold text-gray-900">
-          Pemeliharaan
-        </h1>
+    <>
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-30 flex h-16 items-center border-b border-gray-200 bg-white px-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Buka menu"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-gray-700 transition hover:bg-gray-100"
+        >
+          ☰
+        </button>
 
-        <p className="text-sm text-gray-500">
-          Kendaraan
-        </p>
-      </div>
+        <div className="ml-3">
+          <h1 className="text-base font-bold text-gray-900">
+            Pemeliharaan
+          </h1>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        {menuItems.map((item) => {
-          const hasChildren = Boolean(item.children)
-          const isOpen = openMenu === item.label
-
-          return (
-            <div key={item.label} className="mb-1">
-              <button
-                type="button"
-                onClick={() =>
-                  hasChildren
-                    ? setOpenMenu(isOpen ? null : item.label)
-                    : setOpenMenu(null)
-                }
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="w-5 text-center text-gray-500">
-                    {item.icon}
-                  </span>
-
-                  {item.label}
-                </span>
-
-                {hasChildren && (
-                  <span className="text-xs text-gray-400">
-                    {isOpen ? '⌃' : '⌄'}
-                  </span>
-                )}
-              </button>
-
-              {hasChildren && isOpen && (
-                <div className="ml-8 mt-1 space-y-1">
-                  {item.children?.map((child) => (
-  <button
-    key={child}
-    type="button"
-    onClick={() => {
-      if (child === 'Kendaraan') {
-        router.push('/kendaraan')
-      }
-    }}
-    className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-  >
-    {child}
-  </button>
-))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="border-t border-gray-200 p-4">
-        <div className="rounded-lg bg-gray-50 px-3 py-3">
-          <p className="text-xs font-medium text-gray-500">
-            Vehicle Management
-          </p>
-
-          <p className="mt-1 text-xs text-gray-400">
-            Version 1.0
+          <p className="text-xs text-gray-500">
+            Kendaraan
           </p>
         </div>
-      </div>
-    </aside>
+      </header>
+
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Tutup menu"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r
+          border-gray-200 bg-white shadow-xl transition-transform duration-300
+          ease-in-out md:static md:z-auto md:h-screen md:w-64 md:shrink-0
+          md:translate-x-0 md:shadow-none
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-5">
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">
+              Pemeliharaan
+            </h1>
+
+            <p className="text-sm text-gray-500">
+              Kendaraan
+            </p>
+          </div>
+
+          {/* Mobile Close */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Tutup menu"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 md:hidden"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {menuItems.map((item) => {
+            const hasChildren = Boolean(item.children)
+            const isOpen = openMenu === item.label
+
+            return (
+              <div key={item.label} className="mb-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleMenuClick(item.label, hasChildren)
+                  }
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="w-5 text-center text-gray-500">
+                      {item.icon}
+                    </span>
+
+                    {item.label}
+                  </span>
+
+                  {hasChildren && (
+                    <span className="text-xs text-gray-400">
+                      {isOpen ? '⌃' : '⌄'}
+                    </span>
+                  )}
+                </button>
+
+                {hasChildren && isOpen && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.children?.map((child) => (
+                      <button
+                        key={child}
+                        type="button"
+                        onClick={() => handleChildClick(child)}
+                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        {child}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 p-4">
+          <div className="rounded-lg bg-gray-50 px-3 py-3">
+            <p className="text-xs font-medium text-gray-500">
+              Vehicle Management
+            </p>
+
+            <p className="mt-1 text-xs text-gray-400">
+              Version 1.0
+            </p>
+          </div>
+        </div>
+      </aside>
+    </>
   )
 }
