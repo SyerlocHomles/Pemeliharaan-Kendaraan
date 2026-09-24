@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 type Vehicle = {
@@ -19,6 +19,16 @@ export default function KendaraanPage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const [name, setName] = useState('')
+  const [plateNumber, setPlateNumber] = useState('')
+  const [manufactureYear, setManufactureYear] = useState('')
+  const [brand, setBrand] = useState('')
+  const [model, setModel] = useState('')
+  const [vehicleType, setVehicleType] = useState('')
+  const [status, setStatus] = useState('Aktif')
+  const [notes, setNotes] = useState('')
 
   async function loadVehicles() {
     setLoading(true)
@@ -45,6 +55,80 @@ export default function KendaraanPage() {
     loadVehicles()
   }, [])
 
+  function resetForm() {
+    setName('')
+    setPlateNumber('')
+    setManufactureYear('')
+    setBrand('')
+    setModel('')
+    setVehicleType('')
+    setStatus('Aktif')
+    setNotes('')
+  }
+
+  function closeModal() {
+    if (saving) return
+
+    setShowModal(false)
+    resetForm()
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!name.trim()) {
+      setMessage('Nama kendaraan wajib diisi.')
+      return
+    }
+
+    if (!plateNumber.trim()) {
+      setMessage('Plat nomor wajib diisi.')
+      return
+    }
+
+    setSaving(true)
+    setMessage('')
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      setMessage('Sesi login tidak ditemukan. Silakan login kembali.')
+      setSaving(false)
+      return
+    }
+
+    const { error } = await supabase.from('vehicles').insert({
+      user_id: user.id,
+      name: name.trim(),
+      plate_number: plateNumber.trim().toUpperCase(),
+      brand: brand.trim() || null,
+      model: model.trim() || null,
+      manufacture_year: manufactureYear
+        ? Number(manufactureYear)
+        : null,
+      vehicle_type: vehicleType || null,
+      status,
+      notes: notes.trim() || null,
+    })
+
+    if (error) {
+      setMessage(`Gagal menyimpan kendaraan: ${error.message}`)
+      setSaving(false)
+      return
+    }
+
+    setShowModal(false)
+    resetForm()
+    setSaving(false)
+
+    await loadVehicles()
+
+    setMessage('Kendaraan berhasil ditambahkan.')
+  }
+
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mx-auto max-w-7xl">
@@ -62,7 +146,10 @@ export default function KendaraanPage() {
 
           <button
             type="button"
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setMessage('')
+              setShowModal(true)
+            }}
             className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
           >
             + Tambah Kendaraan
@@ -71,7 +158,7 @@ export default function KendaraanPage() {
 
         {/* Message */}
         {message && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm">
             {message}
           </div>
         )}
@@ -129,7 +216,8 @@ export default function KendaraanPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-gray-400">
-                        Tambahkan kendaraan pertama untuk mulai menggunakan sistem.
+                        Tambahkan kendaraan pertama untuk mulai menggunakan
+                        sistem.
                       </p>
                     </td>
                   </tr>
@@ -191,82 +279,129 @@ export default function KendaraanPage() {
 
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="rounded-lg px-3 py-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                onClick={closeModal}
+                disabled={saving}
+                className="rounded-lg px-3 py-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 ✕
               </button>
             </div>
 
             {/* Form */}
-            <form className="p-6">
+            <form onSubmit={handleSubmit} className="p-6">
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="name"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Nama Kendaraan
                   </label>
 
                   <input
+                    id="name"
                     type="text"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
                     placeholder="Contoh: Mobil Operasional 01"
+                    required
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="plateNumber"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Plat Nomor
                   </label>
 
                   <input
+                    id="plateNumber"
                     type="text"
+                    value={plateNumber}
+                    onChange={(event) =>
+                      setPlateNumber(event.target.value.toUpperCase())
+                    }
                     placeholder="Contoh: L 1234 AB"
+                    required
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm uppercase outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="manufactureYear"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Tahun Produksi
                   </label>
 
                   <input
+                    id="manufactureYear"
                     type="number"
+                    value={manufactureYear}
+                    onChange={(event) =>
+                      setManufactureYear(event.target.value)
+                    }
                     placeholder="Contoh: 2024"
+                    min="1900"
+                    max="2100"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="brand"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Merk
                   </label>
 
                   <input
+                    id="brand"
                     type="text"
+                    value={brand}
+                    onChange={(event) => setBrand(event.target.value)}
                     placeholder="Contoh: Toyota"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="model"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Model
                   </label>
 
                   <input
+                    id="model"
                     type="text"
+                    value={model}
+                    onChange={(event) => setModel(event.target.value)}
                     placeholder="Contoh: Avanza"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="vehicleType"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Jenis Kendaraan
                   </label>
 
-                  <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900">
+                  <select
+                    id="vehicleType"
+                    value={vehicleType}
+                    onChange={(event) => setVehicleType(event.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+                  >
                     <option value="">Pilih jenis kendaraan</option>
                     <option value="Mobil">Mobil</option>
                     <option value="Motor">Motor</option>
@@ -277,11 +412,19 @@ export default function KendaraanPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="status"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Status
                   </label>
 
-                  <select className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900">
+                  <select
+                    id="status"
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+                  >
                     <option value="Aktif">Aktif</option>
                     <option value="Nonaktif">Nonaktif</option>
                     <option value="Dijual">Dijual</option>
@@ -290,12 +433,18 @@ export default function KendaraanPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="notes"
+                    className="mb-1.5 block text-sm font-medium text-gray-700"
+                  >
                     Catatan
                   </label>
 
                   <textarea
+                    id="notes"
                     rows={3}
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
                     placeholder="Catatan tambahan..."
                     className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   />
@@ -306,18 +455,19 @@ export default function KendaraanPage() {
               <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-5">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  onClick={closeModal}
+                  disabled={saving}
+                  className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Batal
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Simpan
+                  {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
             </form>
