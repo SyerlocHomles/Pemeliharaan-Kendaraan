@@ -167,7 +167,7 @@ export default function Home() {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
         {/* Top Bar */}
         <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
           <div>
