@@ -298,9 +298,10 @@ export default function KendaraanPage() {
 
             {/* Scrollable Form Area */}
             <form
-              onSubmit={handleSubmit}
-              className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
-            >
+  id="vehicle-form"
+  onSubmit={handleSubmit}
+  className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
+>
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label
