@@ -1,7 +1,8 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 const menuItems = [
   {
@@ -41,7 +42,25 @@ const menuItems = [
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState<string | null>('Transaksi')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
   const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
 
   function handleMenuClick(label: string, hasChildren: boolean) {
     if (hasChildren) {
@@ -65,6 +84,13 @@ export default function Sidebar() {
     }
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    setMobileOpen(false)
+    router.push('/')
+    router.refresh()
+  }
+
   return (
     <>
       {/* Mobile Header */}
@@ -73,7 +99,7 @@ export default function Sidebar() {
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Buka menu"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-gray-700 transition hover:bg-gray-100"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-2xl text-gray-700 transition hover:bg-gray-100"
         >
           ☰
         </button>
@@ -109,7 +135,7 @@ export default function Sidebar() {
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Header */}
+        {/* Sidebar Header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-5">
           <div>
             <h1 className="text-lg font-bold text-gray-900">
@@ -121,7 +147,6 @@ export default function Sidebar() {
             </p>
           </div>
 
-          {/* Mobile Close */}
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
@@ -181,9 +206,23 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Account / Logout */}
         <div className="border-t border-gray-200 p-4">
-          <div className="rounded-lg bg-gray-50 px-3 py-3">
+          {userEmail && (
+            <p className="mb-3 truncate px-1 text-xs text-gray-500">
+              {userEmail}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 hover:text-gray-900"
+          >
+            Logout
+          </button>
+
+          <div className="mt-3 rounded-lg bg-gray-50 px-3 py-3">
             <p className="text-xs font-medium text-gray-500">
               Vehicle Management
             </p>
