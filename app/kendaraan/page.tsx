@@ -14,6 +14,12 @@ type Vehicle = {
   status: string | null
 }
 
+const statusLabels: Record<string, string> = {
+  active: 'Aktif',
+  inactive: 'Nonaktif',
+  sold: 'Dijual',
+}
+
 export default function KendaraanPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,7 +33,7 @@ export default function KendaraanPage() {
   const [brand, setBrand] = useState('')
   const [model, setModel] = useState('')
   const [vehicleType, setVehicleType] = useState('')
-  const [status, setStatus] = useState('Aktif')
+  const [status, setStatus] = useState('active')
   const [notes, setNotes] = useState('')
 
   async function loadVehicles() {
@@ -62,7 +68,7 @@ export default function KendaraanPage() {
     setBrand('')
     setModel('')
     setVehicleType('')
-    setStatus('Aktif')
+    setStatus('active')
     setNotes('')
   }
 
@@ -130,10 +136,10 @@ export default function KendaraanPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-gray-100 px-4 pb-6 pt-20 md:p-6">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Kendaraan
@@ -150,7 +156,7 @@ export default function KendaraanPage() {
               setMessage('')
               setShowModal(true)
             }}
-            className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+            className="shrink-0 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
           >
             + Tambah Kendaraan
           </button>
@@ -250,7 +256,9 @@ export default function KendaraanPage() {
                       </td>
 
                       <td className="px-5 py-4 text-sm text-gray-700">
-                        {vehicle.status ?? '-'}
+                        {statusLabels[vehicle.status ?? ''] ??
+                          vehicle.status ??
+                          '-'}
                       </td>
                     </tr>
                   ))
@@ -263,10 +271,10 @@ export default function KendaraanPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-3 sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[calc(100dvh-2rem)]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   Tambah Kendaraan
@@ -281,14 +289,18 @@ export default function KendaraanPage() {
                 type="button"
                 onClick={closeModal}
                 disabled={saving}
-                className="rounded-lg px-3 py-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Tutup"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 ✕
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6">
+            {/* Scrollable Form Area */}
+            <form
+              onSubmit={handleSubmit}
+              className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
+            >
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label
@@ -425,10 +437,9 @@ export default function KendaraanPage() {
                     onChange={(event) => setStatus(event.target.value)}
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                   >
-                    <option value="Aktif">Aktif</option>
-                    <option value="Nonaktif">Nonaktif</option>
-                    <option value="Dijual">Dijual</option>
-                    <option value="Rusak">Rusak</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Nonaktif</option>
+                    <option value="sold">Dijual</option>
                   </select>
                 </div>
 
@@ -450,27 +461,28 @@ export default function KendaraanPage() {
                   />
                 </div>
               </div>
-
-              {/* Modal Footer */}
-              <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-5">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={saving}
-                  className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Batal
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
             </form>
+
+            {/* Modal Footer */}
+            <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="submit"
+                form="vehicle-form"
+                disabled={saving}
+                className="rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
