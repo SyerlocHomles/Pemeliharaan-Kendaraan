@@ -68,7 +68,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Header */}
-      <header className="sticky top-0 z-30 flex h-16 items-center border-b border-gray-200 bg-white px-4 md:hidden">
+      <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center border-b border-gray-200 bg-white px-4 md:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
